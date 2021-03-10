@@ -1,0 +1,6 @@
+{
+  "name": "sst-cr-provider-bug",
+  "stage": "dev",
+  "region": "us-east-1",
+  "lint": true
+}
