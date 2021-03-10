@@ -1,45 +1,57 @@
-# Getting Started with Serverless Stack (SST)
+# Custom Resource Provider bug
 
-This project was bootstrapped with [Create Serverless Stack](https://docs.serverless-stack.com/packages/create-serverless-stack).
+When I do:
 
-Start by installing the dependencies.
+```typescript
+    const nodejsLambda = new lambda.NodejsFunction(this, 'lambda', {
+        entry: 'src/lambda.ts',
+    })
 
-```bash
-$ npm install
+    const provider = new cr.Provider(
+        this,
+        'provider',
+        {
+          onEventHandler: nodejsLambda,
+        }
+    );
 ```
 
-## Commands
+And then `npx sst build`, it fails with:
 
-### `npm run start`
+```text
+Preparing your SST app
+Detected tsconfig.json
+Transpiling source
+ > node_modules/@aws-cdk/aws-lambda-nodejs/lib/util.js:73:20: warning: This call to "require" will not be bundled because the argument is not a string literal (surround with a try/catch to silence this warning)
+    73 │     const pkgJson = require(pkgPath); // eslint-disable-line @typescript-eslint/no-require-imports
+       ╵                     ~~~~~~~
 
-Starts the local Lambda development environment.
+1 warning
+Linting source
 
-### `npm run build`
+sst-cr-provider-bug/lib/MyStack.ts
+  13:11  warning  'provider' is assigned a value but never used  @typescript-eslint/no-unused-vars
 
-Build your app and synthesize your stacks.
+✖ 1 problem (0 errors, 1 warning)
 
-Generates a `.build/` directory with the compiled files and a `.build/cdk.out/` directory with the synthesized CloudFormation stacks.
+Running type checker
+Synthesizing CDK
 
-### `npm run deploy [stack]`
+Error: ENOENT: no such file or directory, stat 'sst-cr-provider-bug/.build/lib/runtime'
+    at Object.statSync (fs.js:1086:3)
+    at Object.fingerprint (sst-cr-provider-bug/node_modules/@aws-cdk/core/lib/fs/fingerprint.ts:30:28)
+    at Function.fingerprint (sst-cr-provider-bug/node_modules/@aws-cdk/core/lib/fs/index.ts:38:12)
+    at AssetStaging.calculateHash (sst-cr-provider-bug/node_modules/@aws-cdk/core/lib/asset-staging.ts:445:27)
+    at AssetStaging.stageByCopying (sst-cr-provider-bug/node_modules/@aws-cdk/core/lib/asset-staging.ts:246:28)
+    at stageThisAsset (sst-cr-provider-bug/node_modules/@aws-cdk/core/lib/asset-staging.ts:168:35)
+    at Cache.obtain (sst-cr-provider-bug/node_modules/@aws-cdk/core/lib/private/cache.ts:24:13)
+    at new AssetStaging (sst-cr-provider-bug/node_modules/@aws-cdk/core/lib/asset-staging.ts:191:44)
+    at new Asset (sst-cr-provider-bug/node_modules/@aws-cdk/aws-s3-assets/lib/asset.ts:128:21)
+    at AssetCode.bind (sst-cr-provider-bug/node_modules/@aws-cdk/aws-lambda/lib/code.ts:251:20)
 
-Deploy all your stacks to AWS. Or optionally deploy a specific stack.
+There was an error synthesizing your app.
+```
 
-### `npm run remove [stack]`
+Line in CDK which is causing the issue in SST:
 
-Remove all your stacks and all of their resources from AWS. Or optionally remove a specific stack.
-
-### `npm run test`
-
-Runs your tests using Jest. Takes all the [Jest CLI options](https://jestjs.io/docs/en/cli).
-
-## Documentation
-
-Learn more about the Serverless Stack.
-
-- [Docs](https://docs.serverless-stack.com)
-- [@serverless-stack/cli](https://docs.serverless-stack.com/packages/cli)
-- [@serverless-stack/resources](https://docs.serverless-stack.com/packages/resources)
-
-## Community
-
-[Follow us on Twitter](https://twitter.com/ServerlessStack) or [post on our forums](https://discourse.serverless-stack.com).
+https://github.com/aws/aws-cdk/blob/v1.91.0/packages/@aws-cdk/custom-resources/lib/provider-framework/provider.ts#L16
